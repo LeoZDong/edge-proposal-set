@@ -1,0 +1,1 @@
+"""Defines the trainer object."""
