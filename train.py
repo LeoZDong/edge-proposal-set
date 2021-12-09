@@ -37,9 +37,9 @@ while it < args.n_iter:
         user, item_pos, item_neg = batch
         user_feat, item_pos_feat, item_neg_feat = node_feat[user], node_feat[item_pos], node_feat[item_neg]
 
-        pred_pos = torch.sigmoid((user_feat * item_pos_feat).sum(-1))
-        pred_neg = torch.sigmoid((user_feat * item_neg_feat).sum(-1))
-        loss = -(pred_pos - pred_neg).log().mean()
+        pred_pos = (user_feat * item_pos_feat).sum(-1)
+        pred_neg = (user_feat * item_neg_feat).sum(-1)
+        loss = -(pred_pos - pred_neg).sigmoid().log().mean()
         loss_it.append(loss.detach().cpu().item())
         loss.backward()
         optim.step()
