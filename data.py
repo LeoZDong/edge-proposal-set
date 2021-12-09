@@ -38,7 +38,7 @@ def get_data(csv_file='ratings.csv', feat_dim=128):
             edge_index_lst.append(edge[::-1])
             edge_attr_lst.append(int(rating > THRESHOLD))
             edge_attr_lst.append(int(rating > THRESHOLD))
-        edge_index = torch.LongTensor(edge_index_lst)
+        edge_index = torch.LongTensor(edge_index_lst).T
         edge_attr = torch.BoolTensor(edge_attr_lst).unsqueeze(1)
         x = torch.ones(len(userIds) + len(movieIds), feat_dim)
         
