@@ -39,7 +39,7 @@ mp_edge_index = graph.edge_index[:, graph.mp_mask]
 val_mp_mask = torch.logical_or(graph.mp_mask, graph.sup_mask)
 val_mp_edge_index = graph.edge_index[:, val_mp_mask]
 val_edge_index = graph.edge_index[:, torch.logical_or(val_mp_mask, graph.val_mask)]
-val_adj_mat = util.build_adj_mat(val_edge_index, num_user, num_item)
+val_adj_mat = data.build_adj_mat(val_edge_index, num_user, num_item)
 
 # test_mp_mask = torch.logical_or(val_mp_mask, graph.val_mask)
 # test_edge_index = graph.edge_index[:, test_mp_mask]
