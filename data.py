@@ -124,7 +124,6 @@ def get_masks(length, seed=0):
     torch.manual_seed(seed)
     rand_idx = torch.randperm(length)
 
-    # TEMP: only use 1% for train and sup!
     mp_idx = rand_idx[:round(length * 0.6)]
     sup_idx = rand_idx[round(length * 0.6):round(length * 0.8)]
     # mp_idx = rand_idx[:round(length * 0.01)]
