@@ -36,7 +36,7 @@ train_dataset = data.get_dataset(graph, 'train', args.num_neg_per_user)
 train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 mp_edge_index = graph.edge_index[:, graph.mp_mask]
 
-val_mp_mask = torch.logical_or(torch.logical_or(graph.mp_mask, graph.sup_mask))
+val_mp_mask = torch.logical_or(torch.logical_or(graph.mp_mask, graph.sup_mask), graph.val_mask)
 val_edge_index = graph.edge_index[:, val_mp_mask]
 
 # Define models
