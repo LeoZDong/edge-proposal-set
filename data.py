@@ -35,44 +35,21 @@ def get_data(csv_file='ratings.csv', feat_dim=128):
         for row in csvreader:
             userId, movieId, rating = process_row(row)
             edge = [userIds[userId], movieIds[movieId]]
-            edge_index_lst.append(edge)
-            edge_index_lst.append(edge[::-1])
-            edge_attr_lst.append(int(rating > THRESHOLD))
-            edge_attr_lst.append(int(rating > THRESHOLD))
+            if rating > THRESHOLD:
+                edge_index_lst.append(edge)
+                edge_index_lst.append(edge[::-1])
         edge_index = torch.LongTensor(edge_index_lst)
-        
-        
-        edge_attr_tr, edge_attr_val, edge_attr_test = split_edge_labels(edge_attr_lst)
+    
+        mask_gen = torch.randint(low=0, high=10, size =(edge_index.shape[0],))
+        mp_mask = torch.le(mask_gen, 5) #%60 chance
+        sup_mask = torch.logical_or(torch.eq(mask_gen, 6), torch.eq(mask_gen, 7)) #%20 chance
+        val_mask = torch.eq(mask_gen, 8) #%10 chance
+        test_mask = torch.eq(mask_gen, 9) #%10 chance
         
         x = torch.ones(len(userIds) + len(movieIds), feat_dim)
+        data = Data(x=x, edge_index=edge_index)
         
-        tr_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr_tr)
-        val_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr_val)
-        test_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr_test)
-        
-        return tr_data, val_data, test_data
-
-def split_edge_labels(labels):
-    tr_labels = []
-    val_labels = []
-    test_labels = []
-    for label in labels:
-        rand = random.random()
-        if rand > 0.4 # 60% chance
-            tr_labels.append(label)
-            test_labels.append(-1)
-            val_labels.append(-1)
-        else if rand > 0.2:  # 20% chance
-            val_labels.append(label)
-            tr_labels.append(-1)
-            test_labels.append(-1)
-        else: # 20% chance
-            test_labels.append(label)
-            val_labels.append(-1)
-            tr_labels.append(-1)
-    
-    f = lambda x : torch.LongTensor(x).unsqueeze(1)
-    return f(tr_labels), f(val_labels), f(test_labels)
+        return data, mp_mask, sup_mask, val_mask, test_mask
 
 # def get_dataloader(args):
       # Doesnt work because this is for datasets which have multiple "data"s, where we just have one data
@@ -88,10 +65,11 @@ def main():
     # args = Args()
     # args.batch_size = 32
     # args.shuffle = True
-    data = get_data()
+    data, mp_mask, sup_mask, val_mask, test_mask = get_data()
     pdb.set_trace()
     # DataLoader(data, batch_size=)
     print(data) # Data(x=[10334], edge_index=[201672, 2], edge_attr=[201672])
         
 if __name__ == "__main__":
     main()
+    
