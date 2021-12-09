@@ -37,10 +37,12 @@ train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=Tru
 mp_edge_index = graph.edge_index[:, graph.mp_mask]
 
 val_mp_mask = torch.logical_or(graph.mp_mask, graph.sup_mask)
-val_edge_index = graph.edge_index[:, val_mp_mask]
+val_mp_edge_index = graph.edge_index[:, val_mp_mask]
+val_edge_index = graph.edge_index[:, torch.logical_or(val_mp_mask, graph.val_mask)]
+val_adj_mat = util.build_adj_mat(val_edge_index, num_user, num_item)
 
-test_mp_mask = torch.logical_or(val_mp_mask, graph.val_mask)
-test_edge_index = graph.edge_index[:, test_mp_mask]
+# test_mp_mask = torch.logical_or(val_mp_mask, graph.val_mask)
+# test_edge_index = graph.edge_index[:, test_mp_mask]
 
 
 # Define models
@@ -91,16 +93,18 @@ while it < args.n_iter:
             # NOTE: Since metric is calculated on the entire known graph, perhaps
             # it is more fair to use test_edge_index (i.e. only test edges are heldout).
             if USE_CUDA:
-                node_feat = model(graph.x.cuda(), test_edge_index.cuda())
+                node_feat = model(graph.x.cuda(), val_mp_edge_index.cuda())
             else:
-                node_feat = model(graph.x, test_edge_index)
+                node_feat = model(graph.x, val_mp_edge_index)
 
             userEmbeds = node_feat[:num_user]
             itemEmbeds = node_feat[num_user:]
-            precision, recall = metrics.metric_wrap(userEmbeds, itemEmbeds,
-                                                    args.k, graph.edge_set,
-                                                    'precision_recall')
-            print(f"Evaluation: precision={precision}, recall={recall}")
+            # precision, recall = metrics.metric_wrap(userEmbeds, itemEmbeds,
+            #                                         args.k, graph.edge_set,
+            #                                         'precision_recall')
+            # print(f"Evaluation: precision={precision}, recall={recall}")
+            hits_k = metrics.hits_k(userEmbeds, itemEmbeds, args.k, val_adj_mat, num_user)
+            print(f"Evaluation: hits_k={hits_k}")
             model.train()
 
         if it % args.ckpt_interval == 0:

@@ -37,7 +37,7 @@ def get_parser():
     parser.add_argument('--num_neg_per_user', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--eval_interval', type=int, default=100)
-    parser.add_argument('--k', type=int, default=20)
+    parser.add_argument('--k', type=int, default=100)
 
     # optimization hyperparameters
     parser.add_argument('--lr',

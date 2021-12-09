@@ -2,6 +2,7 @@ import torch
 from data import get_data_cached
 
 def top_k_edges(userEmbeds, movieEmbeds, k):
+    import ipdb; ipdb.set_trace()
     dot_prod = userEmbeds @ movieEmbeds.T
     _, topK_indices = dot_prod.flatten().topk(k=k)
     numCols = movieEmbeds.shape[0]
@@ -68,6 +69,20 @@ def precision(edges, gt_edges):
     tp_count = true_pos(edges, gt_edges)
     fp_count = false_pos(edges, gt_edges)
     return tp_count / (tp_count + fp_count)
+
+def hits_k(userEmbeds, movieEmbeds, k, adj_mat, num_user):
+    dot_prod = userEmbeds @ movieEmbeds.T
+    _, topK_indices = dot_prod.topk(k=k)
+
+    num_hits = 0
+    for i, js in enumerate(topK_indices):
+        for j in js:
+            if (i, j) in adj_mat:
+                num_hits += 1
+
+    num_hits /= num_user
+    return num_hits / k
+
 
 import pdb
 def main():
