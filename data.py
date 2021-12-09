@@ -133,7 +133,6 @@ def get_data(csv_file, feat_dim):
         movieIds = {}
         for row in csvreader:
             userId, movieId, rating = process_row(row)
-
             if userId not in userIds:
                 userIds[userId] = len(userIds)
             if movieId not in movieIds:
@@ -171,9 +170,9 @@ def get_data(csv_file, feat_dim):
 
         return data
 
-def get_data_cached(csv_file='ratings.csv', feat_dim=128):
+def get_data_cached(csv_file='ratings.csv', feat_dim=128, write_new_file=False):
     file_name = f"data_and_masks_{csv_file}_{feat_dim}.pt"
-    if os.path.exists(file_name):
+    if not write_new_file and os.path.exists(file_name):
         print(f"File exists, loading {file_name}")
         dct = torch.load(file_name)
         # return dct["data"], dct["mp_mask"], dct["sup_mask"], dct["val_mask"], dct["test_mask"]
