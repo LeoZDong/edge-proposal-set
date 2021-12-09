@@ -12,6 +12,14 @@ def process_row(row):
     userId, movieId, rating, timestamp = row
     return int(userId), int(movieId), float(rating)
 
+def get_masks(length):
+    mask_gen = torch.randint(low=0, high=10, size =(length,))
+    mp_mask = torch.le(mask_gen, 5) #%60 chance
+    sup_mask = torch.logical_or(torch.eq(mask_gen, 6), torch.eq(mask_gen, 7)) #%20 chance
+    val_mask = torch.eq(mask_gen, 8) #%10 chance
+    test_mask = torch.eq(mask_gen, 9) #%10 chance
+    return mp_mask, sup_mask, val_mask, test_mask
+
 def get_data(csv_file='ratings.csv', feat_dim=128):
     with open(csv_file, newline='') as csvfile:
         csvreader = csv.reader(csvfile, delimiter=',')
@@ -40,12 +48,7 @@ def get_data(csv_file='ratings.csv', feat_dim=128):
                 edge_index_lst.append(edge[::-1])
         edge_index = torch.LongTensor(edge_index_lst)
     
-        mask_gen = torch.randint(low=0, high=10, size =(edge_index.shape[0],))
-        mp_mask = torch.le(mask_gen, 5) #%60 chance
-        sup_mask = torch.logical_or(torch.eq(mask_gen, 6), torch.eq(mask_gen, 7)) #%20 chance
-        val_mask = torch.eq(mask_gen, 8) #%10 chance
-        test_mask = torch.eq(mask_gen, 9) #%10 chance
-        
+        mp_mask, sup_mask, val_mask, test_mask = get_masks(edge_index.shape[0])
         x = torch.ones(len(userIds) + len(movieIds), feat_dim)
         data = Data(x=x, edge_index=edge_index)
         
