@@ -1,7 +1,7 @@
 import os
 import argparse
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch_geometric.utils import negative_sampling
