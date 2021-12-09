@@ -71,12 +71,14 @@ def precision(edges, gt_edges):
     return tp_count / (tp_count + fp_count)
 
 def hits_k(userEmbeds, movieEmbeds, k, adj_mat, num_user):
+    # import ipdb; ipdb.set_trace()
     dot_prod = userEmbeds @ movieEmbeds.T
     _, topK_indices = dot_prod.topk(k=k)
 
     num_hits = 0
     for i, js in enumerate(topK_indices):
         for j in js:
+            j = j.item()
             if (i, j) in adj_mat:
                 num_hits += 1
 
@@ -94,11 +96,12 @@ def main():
     embeds = torch.rand((nU + nM, dim))
     userEmbeds = embeds[:nU]
     movieEmbeds = embeds[nU:]
-    edges = top_k_edges(userEmbeds, movieEmbeds, k)
+    # edges = top_k_edges(userEmbeds, movieEmbeds, k)
 
-    data, num_users, num_movies, edge_set, mp_mask, sup_mask, val_mask, test_mask = get_data_cached()
-    precision, recall = metric_wrap(userEmbeds, movieEmbeds, k, edge_set, "precision_recall")
-    print(precision, recall)
+    # data, num_users, num_movies, edge_set, mp_mask, sup_mask, val_mask, test_mask = get_data_cached()
+    # precision, recall = metric_wrap(userEmbeds, movieEmbeds, k, edge_set, "precision_recall")
+    # print(precision, recall)
+    # hits = hits_k(userEmbeds, movieEmbeds, 50, adj_)
 
 if __name__ == "__main__":
     main()

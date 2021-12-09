@@ -104,7 +104,7 @@ while it < args.n_iter:
             #                                         'precision_recall')
             # print(f"Evaluation: precision={precision}, recall={recall}")
             hits_k = metrics.hits_k(userEmbeds, itemEmbeds, args.k, val_adj_mat, num_user)
-            print(f"Evaluation: hits_k={hits_k}")
+            print(f"Evaluation: hits_k={round(hits_k, 3)}")
             model.train()
 
         if it % args.ckpt_interval == 0:
