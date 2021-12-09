@@ -36,6 +36,9 @@ train_dataset = data.get_dataset(graph, 'train', args.num_neg_per_user)
 train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 mp_edge_index = graph.edge_index[:, graph.mp_mask]
 
+val_mp_mask = torch.logic_or(torch.logical_or(graph.mp_mask, graph.sup_mask))
+val_edge_index = graph.edge_index[:, val_mp_mask]
+
 # Define models
 model = models.get_model(args, num_user + num_item)
 if USE_CUDA:
@@ -82,9 +85,9 @@ while it < args.n_iter:
         if it % args.eval_interval == 0:
             model.eval()
             if USE_CUDA:
-                node_feat = model(graph.x.cuda(), mp_edge_index.cuda())
+                node_feat = model(graph.x.cuda(), val_edge_index.cuda())
             else:
-                node_feat = model(graph.x, mp_edge_index)
+                node_feat = model(graph.x, val_edge_index)
 
             userEmbeds = node_feat[:num_user]
             itemEmbeds = node_feat[num_user:]
