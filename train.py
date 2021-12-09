@@ -1,9 +1,7 @@
 """Main training script."""
 
 import torch
-from torch_geometric.data.data import Data
-from torch_geometric.loader import DataLoader
-from torch_geometric.datasets import Planetoid
+from torch.utils.data import DataLoader
 
 import config
 import data
@@ -20,17 +18,16 @@ model = models.get_model(args)
 optim = torch.optim.Adam(model.parameters(), args.lr)
 
 # Create data objects
-dataset = data.get_data(csv_file='ratings.csv', feat_dim=128)
-mp_edge_index = dataset.edge_index[:, dataset.mp_mask]
-sup_edge_index = dataset.edge_index[:, dataset.sup_mask]
-train_edge_index = dataset.edge_index[:, torch.logical_or(dataset.mp_mask, dataset.sup_mask)]
-num_nodes = dataset.x.shape[0]
+graph = data.get_data(csv_file='ratings.csv', feat_dim=128)
+train_dataset = data.get_dataset(graph, 'train', args.num_neg_per_user)
+train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+mp_edge_index = graph.edge_index[:, graph.mp_mask]
 
 # Start training
-for it in range(args.sn_iter):
-    out = model(dataset.x, mp_edge_index)
+for it in range(args.n_iter):
+    for batch in train_loader:
+        out = model(graph.x, mp_edge_index)
+        import ipdb; ipdb.set_trace()
 
-    pos_edges = util.sample_pos_edges(sup_edge_index, args.num_edges_per_iter)
-    neg_edges = util.sample_neg_edges(train_edge_index, args.num_edges_per_iter)
-
-    
+    # pos_edges = util.sample_pos_edges(sup_edge_index, args.num_edges_per_iter)
+    # neg_edges = util.sample_neg_edges(train_edge_index, args.num_edges_per_iter)

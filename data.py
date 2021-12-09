@@ -18,7 +18,7 @@ def build_adj_mat(edge_index, user_num, item_num):
     adj_mat = sp.dok_matrix((user_num, item_num), dtype=bool)
     # load ratings as a dok matrix
     for x in edge_index.T:
-        adj_mat[x[0], x[1]] = True
+        adj_mat[x[0], x[1]-user_num] = True
 
     return adj_mat
 
@@ -73,8 +73,8 @@ class BPRData(data.Dataset):
         self.edge_index_neg = np.array(self.edge_index_neg)
 
     def __len__(self):
-        return self.num_ng * len(self.features) if \
-          self.is_training else len(self.features)
+        return self.num_ng * len(self.edge_index) if \
+          self.is_training else len(self.edge_index)
 
     def __getitem__(self, idx):
         features = self.edge_index_neg if \
