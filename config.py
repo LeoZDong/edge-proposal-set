@@ -32,7 +32,7 @@ def get_parser():
     # Training setup
     parser.add_argument('--n_iter',
                         type=int,
-                        default=100,
+                        default=1000,
                         help='Number of training iterations (epochs).')
     parser.add_argument('--num_neg_per_user', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=256)
