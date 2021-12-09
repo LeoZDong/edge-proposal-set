@@ -110,7 +110,7 @@ class GraphSage(MessagePassing):
         node_dim = self.node_dim
         # inputs shape: (sum_i(#neigh of node i), D)
         # index shape: (sum_i(#neigh of node i)); indicates the corresponding source node index
-        out = torch_scatter.scatter(inputs, index, dim=0, reduce='mean')
+        out = torch_scatter.scatter(inputs, index, dim=0, reduce='sum')
         return out
 
 
