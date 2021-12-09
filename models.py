@@ -39,9 +39,7 @@ class GNNStack(torch.nn.Module):
 
         self.emb = emb
 
-    def forward(self, data):
-        x, edge_index, batch = data.x, data.edge_index, data.batch
-
+    def forward(self, x, edge_index):
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)
             x = F.relu(x)
