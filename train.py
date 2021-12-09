@@ -12,6 +12,10 @@ import util
 import metrics
 
 torch.manual_seed(0)
+if torch.cuda.is_available():
+    USE_CUDA = True
+else:
+    USE_CUDA = False
 
 # Load hyperparameters
 args = config.parse()
@@ -45,7 +49,10 @@ model.train()
 while it < args.n_iter:
     for batch in train_loader:
         t = time.time()
-        node_feat = model(graph.x, mp_edge_index)
+        if USE_CUDA:
+            node_feat = model(graph.x.cuda(), mp_edge_index.cuda())
+        else:
+            node_feat = model(graph.x, mp_edge_index)
 
         # Loss calculation
         optim.zero_grad()
@@ -55,8 +62,6 @@ while it < args.n_iter:
         pred_pos = (user_feat * item_pos_feat).sum(-1)
         pred_neg = (user_feat * item_neg_feat).sum(-1)
         loss = -(pred_pos - pred_neg).sigmoid().log().mean()
-        # import ipdb; ipdb.set_trace()
-        # loss = -(pred_pos).sigmoid().log().mean()
         loss_it.append(loss.detach().cpu().item())
         loss.backward()
         optim.step()
@@ -73,7 +78,11 @@ while it < args.n_iter:
 
         if it % args.eval_interval == 0:
             model.eval()
-            node_feat = model(graph.x, mp_edge_index)
+            if USE_CUDA:
+                node_feat = model(graph.x.cuda(), mp_edge_index.cuda())
+            else:
+                node_feat = model(graph.x, mp_edge_index)
+                
             userEmbeds = node_feat[:num_user]
             itemEmbeds = node_feat[num_user:]
             precision, recall = metrics.metric_wrap(userEmbeds, itemEmbeds,
@@ -86,7 +95,5 @@ while it < args.n_iter:
             file = f'models/model_{it}.pt'
             torch.save(model.state_dict(), file)
 
-    # pos_edges = util.sample_pos_edges(sup_edge_index, args.num_edges_per_iter)
-    # neg_edges = util.sample_neg_edges(train_edge_index, args.num_edges_per_iter)
 
 torch.save(model.state_dict(), 'models/model_final.pt')
