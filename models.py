@@ -19,7 +19,7 @@ from torch_geometric.utils import remove_self_loops, add_self_loops, softmax, de
 
 class GNNStack(torch.nn.Module):
     """Defines a stack of GNN layers."""
-    def __init__(self, input_dim, hidden_dim, output_dim, args, emb=False):
+    def __init__(self, input_dim, hidden_dim, output_dim, args, num_nodes):
         super(GNNStack, self).__init__()
         conv_model = GraphSage
         self.convs = nn.ModuleList()
@@ -37,9 +37,11 @@ class GNNStack(torch.nn.Module):
         self.dropout = args.dropout
         self.num_layers = args.num_layers
 
-        self.emb = emb
+        self.emb = torch.nn.Embedding(num_nodes, args.hidden_channels)
 
     def forward(self, x, edge_index):
+        # NOTE: Overwrite x!
+        x = self.emb.weight
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)
             x = F.relu(x)
@@ -52,8 +54,10 @@ class GNNStack(torch.nn.Module):
 
         return F.log_softmax(x, dim=1)
 
-    def loss(self, pred, label):
-        return F.nll_loss(pred, label)
+    def reset_parameters(self):
+        torch.nn.init.xavier_uniform_(self.emb.weight)
+        for conv in self.convs:
+            conv.reset_parameters()
 
 
 class GraphSage(MessagePassing):
@@ -174,7 +178,7 @@ class GAT(MessagePassing):
 
         return out
 
-def get_model(args):
-    model = GNNStack(args.feat_dim, args.feat_dim, args.feat_dim, args, True)
+def get_model(args, num_nodes):
+    model = GNNStack(args.feat_dim, args.feat_dim, args.feat_dim, args, num_nodes)
     return model
     # input_dim, hidden_dim, output_dim, args, emb = False

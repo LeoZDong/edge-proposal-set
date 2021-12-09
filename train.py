@@ -20,14 +20,6 @@ else:
 # Load hyperparameters
 args = config.parse()
 
-# Define models
-model = models.get_model(args)
-if USE_CUDA:
-    model = model.cuda()
-
-# Define optimizer
-optim = torch.optim.Adam(model.parameters(), args.lr)
-
 # Create data objects
 graph = data.get_data(csv_file='ratings.csv', feat_dim=128)
 train_mask = torch.logical_or(graph.mp_mask, graph.sup_mask)
@@ -43,6 +35,15 @@ num_item = graph.num_item
 train_dataset = data.get_dataset(graph, 'train', args.num_neg_per_user)
 train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 mp_edge_index = graph.edge_index[:, graph.mp_mask]
+
+# Define models
+model = models.get_model(args, num_user + num_item)
+if USE_CUDA:
+    model = model.cuda()
+
+# Define optimizer
+optim = torch.optim.Adam(model.parameters(), args.lr)
+
 
 # Start training
 loss_it = []
