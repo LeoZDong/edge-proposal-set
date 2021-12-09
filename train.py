@@ -106,14 +106,15 @@ while it < args.n_iter:
 
                 userEmbeds = node_feat[:num_user]
                 itemEmbeds = node_feat[num_user:]
-                # precision, recall = metrics.metric_wrap(userEmbeds, itemEmbeds,
-                #                                         args.k, graph.edge_set,
-                #                                         'precision_recall')
-                # print(f"Evaluation: precision={precision}, recall={recall}")
                 hits_k = metrics.hits_k(userEmbeds, itemEmbeds, args.k,
                                         val_adj_mat, num_user,
                                         recall_exclude_edges, val_num_pos)
                 print(f"Evaluation: hits_k={round(hits_k, 3)}")
+
+                if hits_k > best_hits_k:
+                    best_hits_k = hits_k
+                    print("Saving best model...")
+                    torch.save(model.state_dict(), 'models/model_best.pt')
 
                 model.train()
 
