@@ -72,8 +72,8 @@ def precision(edges, gt_edges):
 
 def hits_k(userEmbeds, movieEmbeds, k, adj_mat, num_user, exclude_edges, num_pos):
     dot_prod = userEmbeds @ movieEmbeds.T
-    for edge in exclude_edges:
-        dot_prod[edge[0], edge[1]] = -float('inf')
+    # for edge in exclude_edges:
+    dot_prod[exclude_edges[:, 0], exclude_edges[:, 1]] = -float('inf')
 
     _, topK_indices = dot_prod.topk(k=k)
 

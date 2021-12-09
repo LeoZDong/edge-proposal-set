@@ -13,18 +13,34 @@ import metrics
 
 torch.manual_seed(0)
 USE_CUDA = torch.cuda.is_available()
+P = 10000
 
-def main():
+def top_P_edges(userEmbeds, movieEmbeds, k, exclude_edges):
+    dot_prod = userEmbeds @ movieEmbeds.T
+    # for edge in exclude_edges:
+    dot_prod[exclude_edges[:, 0], exclude_edges[:, 1]] = -float('inf')
+    _, topK_indices = dot_prod.flatten().topk(k=k)
+    numCols = movieEmbeds.shape[0]
+    rows = torch.div(topK_indices, numCols, rounding_mode='floor')
+    cols = topK_indices % numCols
+
+
+    return torch.stack([rows, cols]).T
+
+def main(mode="pretrain", load=True):
     # Load hyperparameters
     args = config.parse()
 
     # Create data objects
+    
     graph = data.get_data_cached(csv_file='ratings.csv', feat_dim=128)
+ 
     train_mask = torch.logical_or(graph.mp_mask, graph.sup_mask)
     train_edge_index = graph.edge_index[:, train_mask]
     val_edge_index = graph.edge_index[:, graph.val_mask]
 
     # TEMP: use train to build adj_mat for eval!
+    # dz: why is this defined below again
     val_adj_mat = data.build_adj_mat(train_edge_index, graph.num_user,
                                      graph.num_item)
 
@@ -55,6 +71,22 @@ def main():
 
     # Define optimizer
     optim = torch.optim.Adam(model.parameters(), args.lr)
+    
+    if load:
+        name = "pretrain" if mode == "train" else "none"
+        util.load(name, "models/", iteration, model, optim)
+        
+    if mode == "train": #add new edges
+        node_feat = model(graph.x.cuda(), val_mp_edge_index.cuda())
+        userEmbeds = node_feat[:num_user]
+        itemEmbeds = node_feat[num_user:]
+        exclude_MP = mp_edge_index.clone().T
+        exclude_MP[:, 1] -= num_user
+        
+        p_edges = top_P_edges(userEmbeds, movieEmbeds, P, exclude_MP)
+        mp_edge_index = mp_edge_index.stack([mp_edge_index, p_edges])
+        pdb.set_Trace()
+    
 
 
     # Start training
@@ -66,6 +98,7 @@ def main():
         for batch in train_loader:
             t = time.time()
             if USE_CUDA:
+                # X is the node embeds for all the users, MP_edge is the message passing edges used
                 node_feat = model(graph.x.cuda(), mp_edge_index.cuda())
             else:
                 node_feat = model(graph.x, mp_edge_index)
@@ -112,16 +145,15 @@ def main():
                     if hits_k > best_hits_k:
                         best_hits_k = hits_k
                         print("Saving best model...")
-                        torch.save(model.state_dict(), 'models/pretrain_best.pt')
+                        torch.save(model.state_dict(), f'models/{mode}_best.pt')
 
                     model.train()
 
-            if it % args.ckpt_interval == 0:
-                file = f'models/pretrain_{it}.pt'
-                torch.save(model.state_dict(), file)
+            if it % args.ckpt_interval == 0 or it == args.n_iter - 1:
+                # file = f'models/{mode}_{it}.pt'
+                util.save(mode, "models/", it, model, optim)
+                # torch.save(model.state_dict(), file)
 
-
-    torch.save(model.state_dict(), 'models/pretrain_final.pt')
 
 if __name__ == "__main__":
-    main()
+    main("train", False)

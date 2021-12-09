@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch_geometric.utils import negative_sampling
 
-def load(log_dir, iteration, model, optimizer):
+def load(name, log_dir, iteration, model, optimizer):
     """Loads a checkpoint.
     Args:
         iteration (int): iteration of checkpoint to load
@@ -14,7 +14,7 @@ def load(log_dir, iteration, model, optimizer):
         ValueError: if checkpoint for checkpoint_step is not found
     """
     target_path = (
-        f'{os.path.join(log_dir, "state")}'
+        f'{os.path.join(log_dir, f"{name}_state")}'
         f'{iteration}.pt'
     )
     if os.path.isfile(target_path):
@@ -28,7 +28,7 @@ def load(log_dir, iteration, model, optimizer):
             f'No checkpoint for iteration {iteration} found.'
         )
 
-def save(log_dir, iteration, model, optimizer):
+def save(name, log_dir, iteration, model, optimizer):
     """Saves network and optimizer state_dicts as a checkpoint.
     Args:
         iteration (int): iteration to label checkpoint with
@@ -37,7 +37,7 @@ def save(log_dir, iteration, model, optimizer):
              optimizer_state=optimizer.state_dict())
     torch.save(
         save_dict,
-        f'{os.path.join(log_dir, "state")}{iteration}.pt'
+        f'{os.path.join(log_dir, f"{name}_state")}{iteration}.pt'
     )
     print(f'Saved checkpoint, step: {iteration}.')
 
