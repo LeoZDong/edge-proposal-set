@@ -37,7 +37,7 @@ class GNNStack(torch.nn.Module):
         self.dropout = args.dropout
         self.num_layers = args.num_layers
 
-        self.emb = torch.nn.Embedding(num_nodes, args.input_dim)
+        self.emb = torch.nn.Embedding(num_nodes, input_dim)
 
     def forward(self, x, edge_index):
         # NOTE: Overwrite x!
