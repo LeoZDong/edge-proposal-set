@@ -28,6 +28,7 @@ class BPRData(data.Dataset):
     Adopted from https://github.com/guoyang9/BPR-pytorch/blob/master/data_utils.py"""
     def __init__(self,
                  edge_index,
+                 num_user,
                  num_item,
                  train_mat=None,
                  num_ng=0,
@@ -36,7 +37,8 @@ class BPRData(data.Dataset):
         """Note that the labels are only useful when training, we thus 
         add them in the ng_sample() function.
         Args:
-            edge_index (2, num_edges): Edge list.
+            edge_index (2, num_edges): Edge list. This is the raw edge list
+                where user and item nodes start at different indices.
             num_item (int): Number of items.
             train_mat (sparse matrix): (num_user, num_item) User-item iteraction matrix.
                 `train_mat` does not have to correspond to edge_index.
@@ -46,7 +48,10 @@ class BPRData(data.Dataset):
             is_training (bool): Whether we are in training model. If not, we do
                 not perform negative sampling.
         """
+        # Process edge index so user and item node indices both start at 1
+        edge_index[1, :] -= num_user
         self.edge_index = edge_index.T
+        self.num_user = num_user
         self.num_item = num_item
         self.train_mat = train_mat
         self.num_ng = num_ng
@@ -80,6 +85,10 @@ class BPRData(data.Dataset):
         # Kind of a hack; force item_j = item_i when not training (i.e. no neg sampling)
         item_j = features[idx][2] if \
           self.is_training else features[idx][1]
+
+        # Post-process item nodes back to start at num_user instead of 0
+        item_i += self.num_user
+        item_j += self.num_user
         return user, item_i, item_j
 
 
@@ -100,7 +109,7 @@ def get_dataset(data, split, num_neg_per_user):
     else:
         edge_index = data.edge_index[:, data.test_mask]
 
-    dataset = BPRData(edge_index, num_item, train_mat,
+    dataset = BPRData(edge_index, num_user, num_item, train_mat,
                       num_neg_per_user, is_training=is_training)
     return dataset
 
