@@ -4,20 +4,14 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data
 import csv
 import numpy as np
-import pickle
-import random
 import os
-
-THRESHOLD = 3
 
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-
 import torch.utils.data as data
 
-import config
-
+THRESHOLD = 3
 
 def build_adj_mat(edge_index, user_num, item_num):
     """Build sparse adjacency matrix for user-item bipartite graph."""
@@ -141,7 +135,7 @@ def get_data(csv_file, feat_dim):
             movieIds[movieId] += len(userIds)
         csvfile.seek(0)
         next(csvreader)
-        
+
         edge_set = set()
         edge_index_lst = []
         for row in csvreader:
@@ -173,11 +167,11 @@ def get_data_cached(csv_file='ratings.csv', feat_dim=128, write_new_file=False):
     if not write_new_file and os.path.exists(file_name):
         print(f"File exists, loading {file_name}")
         data = torch.load(file_name)
-        return data 
+        return data
     else:
         print(f"File does not exist: {file_name}, creating")
         data = get_data(csv_file, feat_dim)
-        torch.save(data, file_name)        
+        torch.save(data, file_name)
         return data
 
 
@@ -199,7 +193,7 @@ def main():
     data = get_data_cached(write_new_file=True)
     print(data) # Data(x=[10334], edge_index=[201672, 2], edge_attr=[201672])
     pdb.set_trace()
-    
-        
+
+
 if __name__ == "__main__":
     main()
