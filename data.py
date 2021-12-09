@@ -30,7 +30,6 @@ def get_data(csv_file, feat_dim):
         movieIds = {}
         for row in csvreader:
             userId, movieId, rating = process_row(row)
-
             if userId not in userIds:
                 userIds[userId] = len(userIds)
             if movieId not in movieIds:
@@ -54,19 +53,22 @@ def get_data(csv_file, feat_dim):
         x = torch.ones(len(userIds) + len(movieIds), feat_dim)
         data = Data(x=x, edge_index=edge_index)
         
-        return data, mp_mask, sup_mask, val_mask, test_mask
+        return data, len(userIds), len(movieIds), mp_mask, sup_mask, val_mask, test_mask
 
-def get_data_cached(csv_file='ratings.csv', feat_dim=128):
+def get_data_cached(csv_file='ratings.csv', feat_dim=128, write_new_file=False):
     file_name = f"data_and_masks_{csv_file}_{feat_dim}.pt"
-    if os.path.exists(file_name):
+    if not write_new_file and os.path.exists(file_name):
         print(f"File exists, loading {file_name}")
         dct = torch.load(file_name)
-        return dct["data"], dct["mp_mask"], dct["sup_mask"], dct["val_mask"], dct["test_mask"]
+        return dct["data"], dct["num_users"], dct["num_movies"], dct["mp_mask"], \
+                dct["sup_mask"], dct["val_mask"], dct["test_mask"]
     else:
         print(f"File does not exist: {file_name}, creating")
-        data, mp_mask, sup_mask, val_mask, test_mask = get_data(csv_file, feat_dim)
-        torch.save(dict(data=data, mp_mask=mp_mask, sup_mask=sup_mask, val_mask=val_mask, test_mask=test_mask), ) 
-        return data, mp_mask, sup_mask, val_mask, test_mask
+        data, num_users, num_movies, mp_mask, sup_mask, val_mask, test_mask = get_data(csv_file, feat_dim)
+        torch.save(dict(data=data, mp_mask=mp_mask, sup_mask=sup_mask, 
+                        val_mask=val_mask, test_mask=test_mask,
+                       num_users=num_users, num_movies=num_movies), file_name) 
+        return data, num_users, num_movies, mp_mask, sup_mask, val_mask, test_mask
 
 # def get_dataloader(args):
       # Doesnt work because this is for datasets which have multiple "data"s, where we just have one data
@@ -82,7 +84,7 @@ def main():
     # args = Args()
     # args.batch_size = 32
     # args.shuffle = True
-    data, mp_mask, sup_mask, val_mask, test_mask = get_data_cached()
+    data, num_users, num_movies, mp_mask, sup_mask, val_mask, test_mask = get_data_cached()
     
     pdb.set_trace()
     print(data) # Data(x=[10334], edge_index=[201672, 2], edge_attr=[201672])
