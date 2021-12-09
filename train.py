@@ -109,7 +109,7 @@ while it < args.n_iter:
                 hits_k = metrics.hits_k(userEmbeds, itemEmbeds, args.k,
                                         val_adj_mat, num_user,
                                         recall_exclude_edges, val_num_pos)
-                print(f"Evaluation: hits_k={round(hits_k, 3)}")
+                print(f"Evaluation: hits_k={round(hits_k * 100, 2)}")
 
                 if hits_k > best_hits_k:
                     best_hits_k = hits_k
