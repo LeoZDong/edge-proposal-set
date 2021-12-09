@@ -70,8 +70,7 @@ def precision(edges, gt_edges):
     fp_count = false_pos(edges, gt_edges)
     return tp_count / (tp_count + fp_count)
 
-def hits_k(userEmbeds, movieEmbeds, k, adj_mat, num_user, exclude_edges):
-    # import ipdb; ipdb.set_trace()
+def hits_k(userEmbeds, movieEmbeds, k, adj_mat, num_user, exclude_edges, num_pos):
     dot_prod = userEmbeds @ movieEmbeds.T
     for edge in exclude_edges:
         dot_prod[edge[0], edge[1]] = -float('inf')
@@ -83,10 +82,10 @@ def hits_k(userEmbeds, movieEmbeds, k, adj_mat, num_user, exclude_edges):
         for j in js:
             j = j.item()
             if (i, j) in adj_mat:
-                num_hits += 1
+                num_hits += 1 / num_pos[i]
 
     num_hits /= num_user
-    return num_hits / k
+    return num_hits
 
 
 import pdb

@@ -13,9 +13,12 @@ import torch.utils.data as data
 
 THRESHOLD = 3
 
-def build_adj_mat(edge_index, user_num, item_num):
+def build_adj_mat(edge_index, user_num, item_num, sparse=True):
     """Build sparse adjacency matrix for user-item bipartite graph."""
-    adj_mat = sp.dok_matrix((user_num, item_num), dtype=bool)
+    if sparse:
+        adj_mat = sp.dok_matrix((user_num, item_num), dtype=bool)
+    else:
+        adj_mat = np.zeros((user_num, item_num), bool)
     # load ratings as a dok matrix
     for x in edge_index.T:
         adj_mat[x[0], x[1]-user_num] = True

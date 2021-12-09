@@ -41,6 +41,7 @@ val_mp_mask = torch.logical_or(graph.mp_mask, graph.sup_mask)
 val_mp_edge_index = graph.edge_index[:, val_mp_mask]
 recall_exclude_edges = val_mp_edge_index.clone().T
 recall_exclude_edges[:, 1] -= num_user
+val_num_pos = util.count_pos(graph.edge_index[:, graph.val_mask], num_user)
 
 val_edge_index = graph.edge_index[:, torch.logical_or(val_mp_mask, graph.val_mask)]
 val_adj_mat = data.build_adj_mat(val_edge_index, num_user, num_item)
@@ -94,26 +95,27 @@ while it < args.n_iter:
             print(f"It: {it}, loss={round(loss_it[-1], 3)}, time={train_t}")
 
         if it % args.eval_interval == 0:
-            model.eval()
-            # NOTE: Since metric is calculated on the entire known graph, perhaps
-            # it is more fair to use test_edge_index (i.e. only test edges are heldout).
-            if USE_CUDA:
-                node_feat = model(graph.x.cuda(), val_mp_edge_index.cuda())
-            else:
-                node_feat = model(graph.x, val_mp_edge_index)
+            with torch.no_grad():
+                model.eval()
+                # NOTE: Since metric is calculated on the entire known graph, perhaps
+                # it is more fair to use test_edge_index (i.e. only test edges are heldout).
+                if USE_CUDA:
+                    node_feat = model(graph.x.cuda(), val_mp_edge_index.cuda())
+                else:
+                    node_feat = model(graph.x, val_mp_edge_index)
 
-            userEmbeds = node_feat[:num_user]
-            itemEmbeds = node_feat[num_user:]
-            # precision, recall = metrics.metric_wrap(userEmbeds, itemEmbeds,
-            #                                         args.k, graph.edge_set,
-            #                                         'precision_recall')
-            # print(f"Evaluation: precision={precision}, recall={recall}")
-            hits_k = metrics.hits_k(userEmbeds, itemEmbeds, args.k,
-                                    val_adj_mat, num_user,
-                                    recall_exclude_edges)
-            print(f"Evaluation: hits_k={round(hits_k, 3)}")
+                userEmbeds = node_feat[:num_user]
+                itemEmbeds = node_feat[num_user:]
+                # precision, recall = metrics.metric_wrap(userEmbeds, itemEmbeds,
+                #                                         args.k, graph.edge_set,
+                #                                         'precision_recall')
+                # print(f"Evaluation: precision={precision}, recall={recall}")
+                hits_k = metrics.hits_k(userEmbeds, itemEmbeds, args.k,
+                                        val_adj_mat, num_user,
+                                        recall_exclude_edges, val_num_pos)
+                print(f"Evaluation: hits_k={round(hits_k, 3)}")
 
-            model.train()
+                model.train()
 
         if it % args.ckpt_interval == 0:
             file = f'models/model_{it}.pt'
