@@ -4,27 +4,21 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data
 import csv
 import numpy as np
-import pickle
-import random
 import os
-
-THRESHOLD = 3
 
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-
 import torch.utils.data as data
 
-import config
-
+THRESHOLD = 3
 
 def build_adj_mat(edge_index, user_num, item_num):
     """Build sparse adjacency matrix for user-item bipartite graph."""
     adj_mat = sp.dok_matrix((user_num, item_num), dtype=bool)
     # load ratings as a dok matrix
     for x in edge_index.T:
-        adj_mat[x[0], x[1]] = True
+        adj_mat[x[0], x[1]-user_num] = True
 
     return adj_mat
 
@@ -34,6 +28,7 @@ class BPRData(data.Dataset):
     Adopted from https://github.com/guoyang9/BPR-pytorch/blob/master/data_utils.py"""
     def __init__(self,
                  edge_index,
+                 num_user,
                  num_item,
                  train_mat=None,
                  num_ng=0,
@@ -42,7 +37,8 @@ class BPRData(data.Dataset):
         """Note that the labels are only useful when training, we thus 
         add them in the ng_sample() function.
         Args:
-            edge_index (2, num_edges): Edge list.
+            edge_index (2, num_edges): Edge list. This is the raw edge list
+                where user and item nodes start at different indices.
             num_item (int): Number of items.
             train_mat (sparse matrix): (num_user, num_item) User-item iteraction matrix.
                 `train_mat` does not have to correspond to edge_index.
@@ -52,7 +48,10 @@ class BPRData(data.Dataset):
             is_training (bool): Whether we are in training model. If not, we do
                 not perform negative sampling.
         """
+        # Process edge index so user and item node indices both start at 1
+        edge_index[1, :] -= num_user
         self.edge_index = edge_index.T
+        self.num_user = num_user
         self.num_item = num_item
         self.train_mat = train_mat
         self.num_ng = num_ng
@@ -74,8 +73,8 @@ class BPRData(data.Dataset):
         self.edge_index_neg = np.array(self.edge_index_neg)
 
     def __len__(self):
-        return self.num_ng * len(self.features) if \
-          self.is_training else len(self.features)
+        return self.num_ng * len(self.edge_index) if \
+          self.is_training else len(self.edge_index)
 
     def __getitem__(self, idx):
         features = self.edge_index_neg if \
@@ -86,6 +85,10 @@ class BPRData(data.Dataset):
         # Kind of a hack; force item_j = item_i when not training (i.e. no neg sampling)
         item_j = features[idx][2] if \
           self.is_training else features[idx][1]
+
+        # Post-process item nodes back to start at num_user instead of 0
+        item_i += self.num_user
+        item_j += self.num_user
         return user, item_i, item_j
 
 
@@ -106,7 +109,7 @@ def get_dataset(data, split, num_neg_per_user):
     else:
         edge_index = data.edge_index[:, data.test_mask]
 
-    dataset = BPRData(edge_index, num_item, train_mat,
+    dataset = BPRData(edge_index, num_user, num_item, train_mat,
                       num_neg_per_user, is_training=is_training)
     return dataset
 
@@ -141,7 +144,7 @@ def get_data(csv_file, feat_dim):
             movieIds[movieId] += len(userIds)
         csvfile.seek(0)
         next(csvreader)
-        
+
         edge_set = set()
         edge_index_lst = []
         for row in csvreader:
@@ -173,11 +176,11 @@ def get_data_cached(csv_file='ratings.csv', feat_dim=128, write_new_file=False):
     if not write_new_file and os.path.exists(file_name):
         print(f"File exists, loading {file_name}")
         data = torch.load(file_name)
-        return data 
+        return data
     else:
         print(f"File does not exist: {file_name}, creating")
         data = get_data(csv_file, feat_dim)
-        torch.save(data, file_name)        
+        torch.save(data, file_name)
         return data
 
 
@@ -199,7 +202,7 @@ def main():
     data = get_data_cached()
     print(data) # Data(x=[10334], edge_index=[201672, 2], edge_attr=[201672])
     pdb.set_trace()
-    
-        
+
+
 if __name__ == "__main__":
     main()
