@@ -8,7 +8,7 @@ feat_dim: 128
 heads: 1
 k: 100
 log_dir: logs
-log_interval: 1
+log_interval: 100
 lr: 0.0001
 n_iter: 10000000
 name: default

@@ -37,7 +37,11 @@ train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=Tru
 mp_edge_index = graph.edge_index[:, graph.mp_mask]
 
 val_mp_mask = torch.logical_or(graph.mp_mask, graph.sup_mask)
+
 val_mp_edge_index = graph.edge_index[:, val_mp_mask]
+recall_exclude_edges = val_mp_edge_index.clone().T
+recall_exclude_edges[:, 1] -= num_user
+
 val_edge_index = graph.edge_index[:, torch.logical_or(val_mp_mask, graph.val_mask)]
 val_adj_mat = data.build_adj_mat(val_edge_index, num_user, num_item)
 
@@ -58,6 +62,7 @@ optim = torch.optim.Adam(model.parameters(), args.lr)
 loss_it = []
 it = 0
 model.train()
+best_hits_k = 0
 while it < args.n_iter:
     for batch in train_loader:
         t = time.time()
@@ -103,8 +108,11 @@ while it < args.n_iter:
             #                                         args.k, graph.edge_set,
             #                                         'precision_recall')
             # print(f"Evaluation: precision={precision}, recall={recall}")
-            hits_k = metrics.hits_k(userEmbeds, itemEmbeds, args.k, val_adj_mat, num_user)
+            hits_k = metrics.hits_k(userEmbeds, itemEmbeds, args.k,
+                                    val_adj_mat, num_user,
+                                    recall_exclude_edges)
             print(f"Evaluation: hits_k={round(hits_k, 3)}")
+
             model.train()
 
         if it % args.ckpt_interval == 0:
