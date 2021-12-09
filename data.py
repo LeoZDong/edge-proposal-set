@@ -121,25 +121,42 @@ def process_row(row):
 def get_masks(length, seed=0):
     # NOTE: important to fix seed!
     torch.manual_seed(seed)
-    mask_gen = torch.randint(low=0, high=10, size=(length,))
-    mp_mask = torch.le(mask_gen, 5) #%60 chance
-    sup_mask = torch.logical_or(torch.eq(mask_gen, 6), torch.eq(mask_gen, 7)) #%20 chance
-    val_mask = torch.eq(mask_gen, 8) #%10 chance
-    test_mask = torch.eq(mask_gen, 9) #%10 chance
+    rand_idx = torch.randperm(length)
+
+    # TEMP: only use 1% for train and sup!
+    mp_idx = rand_idx[:round(length * 0.6)]
+    sup_idx = rand_idx[round(length * 0.6):round(length * 0.8)]
+    # mp_idx = rand_idx[:round(length * 0.01)]
+    # sup_idx = rand_idx[round(length * 0.01):round(length * 0.02)]
+
+    val_idx = rand_idx[round(length * 0.8):round(length * 0.9)]
+    test_idx = rand_idx[round(length * 0.9):]
+
+    mp_mask = torch.zeros(length).bool()
+    mp_mask[mp_idx] = True
+    sup_mask = torch.zeros(length).bool()
+    sup_mask[sup_idx] = True
+    val_mask = torch.zeros(length).bool()
+    val_mask[val_idx] = True
+    test_mask = torch.zeros(length).bool()
+    test_mask[test_idx] = True
+
     return mp_mask, sup_mask, val_mask, test_mask
 
-def get_data(csv_file, feat_dim):
+def get_data(csv_file, feat_dim, subsample=-1):
     with open(csv_file, newline='') as csvfile:
         csvreader = csv.reader(csvfile, delimiter=',')
         header = next(csvreader)
         userIds = {}
         movieIds = {}
-        for row in csvreader:
+        for i, row in enumerate(csvreader):
             userId, movieId, rating = process_row(row)
             if userId not in userIds:
                 userIds[userId] = len(userIds)
             if movieId not in movieIds:
                 movieIds[movieId] = len(movieIds)
+            if subsample > 0 and i > subsample:
+                break
         for movieId, mappedId in movieIds.items():
             movieIds[movieId] += len(userIds)
         csvfile.seek(0)
@@ -147,13 +164,15 @@ def get_data(csv_file, feat_dim):
 
         edge_set = set()
         edge_index_lst = []
-        for row in csvreader:
+        for i, row in enumerate(csvreader):
             userId, movieId, rating = process_row(row)
             edge = [userIds[userId], movieIds[movieId]]
             if rating > THRESHOLD:
                 edge_set.add(tuple(edge))
                 # Only append user->item edge
                 edge_index_lst.append(edge)
+            if subsample > 0 and i > subsample:
+                break
         edge_index = torch.LongTensor(edge_index_lst).T
 
         mp_mask, sup_mask, val_mask, test_mask = get_masks(edge_index.shape[1])

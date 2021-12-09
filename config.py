@@ -26,21 +26,23 @@ def get_parser():
                         type=int,
                         default=5,
                         help="Number of GNN layers.")
-    parser.add_argument('--heads', type=int, default=2)
-    parser.add_argument('--dropout', type=float, default=0.9)
+    parser.add_argument('--heads', type=int, default=1)
+    parser.add_argument('--dropout', type=float, default=0.1)
     
     # Training setup
     parser.add_argument('--n_iter',
                         type=int,
-                        default=1000,
+                        default=100000,
                         help='Number of training iterations (epochs).')
-    parser.add_argument('--num_neg_per_user', type=int, default=1)
+    parser.add_argument('--num_neg_per_user', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=256)
+    parser.add_argument('--eval_interval', type=int, default=10)
+    parser.add_argument('--k', type=int, default=1000)
 
     # optimization hyperparameters
     parser.add_argument('--lr',
                         type=float,
-                        default=1e-3,
+                        default=1e-4,
                         help="Learning rate.")
 
     # Data loading and model saving
@@ -95,8 +97,3 @@ def parse(root=os.path.dirname(os.path.abspath(__file__)), save_config=True):
             yaml.dump(args, outfile)
 
     return args
-
-
-def get_optimizer(args):
-    # return tf.keras.optimizers.Adam(learning_rate=args.lr)
-    pass

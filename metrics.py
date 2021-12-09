@@ -57,13 +57,13 @@ def precision_recall(edges, gt_edges):
     except ZeroDivisionError:
         rec = None
 
-    return prec, rec 
+    return prec, rec
 
 def recall(edges, gt_edges):
     tp_count = true_pos(edges, gt_edges)
     fn_count = false_neg(edges, gt_edges)
     return tp_count / (tp_count + fn_count)
-    
+
 def precision(edges, gt_edges):
     tp_count = true_pos(edges, gt_edges)
     fp_count = false_pos(edges, gt_edges)
@@ -71,7 +71,7 @@ def precision(edges, gt_edges):
 
 import pdb
 def main():
-    nU = 610 #num user 
+    nU = 610 #num user
     nM = 9724 #num movies
     dim = 128
     print(f"{nU * nM} possible edges")
@@ -80,10 +80,10 @@ def main():
     userEmbeds = embeds[:nU]
     movieEmbeds = embeds[nU:]
     edges = top_k_edges(userEmbeds, movieEmbeds, k)
-    
+
     data, num_users, num_movies, edge_set, mp_mask, sup_mask, val_mask, test_mask = get_data_cached()
     precision, recall = metric_wrap(userEmbeds, movieEmbeds, k, edge_set, "precision_recall")
     print(precision, recall)
-        
+
 if __name__ == "__main__":
     main()

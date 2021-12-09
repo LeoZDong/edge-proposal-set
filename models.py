@@ -21,7 +21,7 @@ class GNNStack(torch.nn.Module):
     """Defines a stack of GNN layers."""
     def __init__(self, input_dim, hidden_dim, output_dim, args, emb=False):
         super(GNNStack, self).__init__()
-        conv_model = GAT
+        conv_model = GraphSage
         self.convs = nn.ModuleList()
         self.convs.append(conv_model(input_dim, hidden_dim))
 
@@ -54,6 +54,60 @@ class GNNStack(torch.nn.Module):
 
     def loss(self, pred, label):
         return F.nll_loss(pred, label)
+
+
+class GraphSage(MessagePassing):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 normalize=True,
+                 bias=False,
+                 **kwargs):
+        super(GraphSage, self).__init__(**kwargs)
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.normalize = normalize
+
+        self.lin_l = None
+        self.lin_r = None
+
+        self.lin_l = nn.Linear(self.in_channels, self.out_channels, bias=bias)
+        self.lin_r = nn.Linear(self.in_channels, self.out_channels, bias=bias)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.lin_l.reset_parameters()
+        self.lin_r.reset_parameters()
+
+    def forward(self, x, edge_index, size=None):
+        out = None
+        # x shape: (n_nodes, feature_dim)
+        out = self.propagate(edge_index, x=(x, x))
+        out = self.lin_r(out)
+        out += self.lin_l(x)
+        if self.normalize:
+            out = nn.functional.normalize(out)
+
+        # out shape: (n_nodes, out_feature_dim)
+        return out
+
+    def message(self, x_j):
+        out = None
+        out = x_j
+
+        return out
+
+    def aggregate(self, inputs, index, dim_size=None):
+        out = None
+
+        # The axis along which to index number of nodes.
+        node_dim = self.node_dim
+        # inputs shape: (sum_i(#neigh of node i), D)
+        # index shape: (sum_i(#neigh of node i)); indicates the corresponding source node index
+        out = torch_scatter.scatter(inputs, index, dim=0, reduce='mean')
+        return out
 
 
 class GAT(MessagePassing):
@@ -121,6 +175,6 @@ class GAT(MessagePassing):
         return out
 
 def get_model(args):
-    model = GNNStack(args.feat_dim, args.feat_dim, args.feat_dim, args, False)
+    model = GNNStack(args.feat_dim, args.feat_dim, args.feat_dim, args, True)
     return model
     # input_dim, hidden_dim, output_dim, args, emb = False
