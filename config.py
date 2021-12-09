@@ -32,10 +32,10 @@ def get_parser():
     # Training setup
     parser.add_argument('--n_iter',
                         type=int,
-                        default=100000,
+                        default=10000000,
                         help='Number of training iterations (epochs).')
     parser.add_argument('--num_neg_per_user', type=int, default=10)
-    parser.add_argument('--batch_size', type=int, default=256)
+    parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--eval_interval', type=int, default=100)
     parser.add_argument('--k', type=int, default=1000)
 
@@ -48,11 +48,11 @@ def get_parser():
     # Data loading and model saving
     parser.add_argument('--ckpt_interval',
                         type=int,
-                        default=1000,
+                        default=10000,
                         help="Save training checkpoints every n iters.")
     parser.add_argument('--log_interval',
                         type=int,
-                        default=1,
+                        default=100,
                         help="Log stats every n iters.")
     
     parser.add_argument('--train_dir',
