@@ -34,6 +34,7 @@ def get_parser():
                         type=int,
                         default=100,
                         help='Number of training iterations (epochs).')
+    parser.add_argument('--num_neg_per_user', type=int, default=1)
 
     # optimization hyperparameters
     parser.add_argument('--lr',

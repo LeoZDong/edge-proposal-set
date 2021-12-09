@@ -71,8 +71,8 @@ def precision(edges, gt_edges):
 
 import pdb
 def main():
-    nU = 610
-    nM = 9724
+    nU = 610 #num user 
+    nM = 9724 #num movies
     dim = 128
     print(f"{nU * nM} possible edges")
     k = 1000
