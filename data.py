@@ -199,7 +199,7 @@ def main():
     # args.batch_size = 32
     # args.shuffle = True
 
-    data = get_data_cached(write_new_file=True)
+    data = get_data_cached()
     print(data) # Data(x=[10334], edge_index=[201672, 2], edge_attr=[201672])
     pdb.set_trace()
 
