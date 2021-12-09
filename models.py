@@ -24,13 +24,14 @@ class GNNStack(torch.nn.Module):
         conv_model = GAT
         self.convs = nn.ModuleList()
         self.convs.append(conv_model(input_dim, hidden_dim))
+
         assert (args.num_layers >= 1), 'Number of layers is not >=1'
         for l in range(args.num_layers-1):
             self.convs.append(conv_model(args.heads * hidden_dim, hidden_dim))
 
         # post-message-passing
         self.post_mp = nn.Sequential(
-            nn.Linear(args.heads * hidden_dim, hidden_dim), nn.Dropout(args.dropout), 
+            nn.Linear(args.heads * hidden_dim, hidden_dim), nn.Dropout(args.dropout),
             nn.Linear(hidden_dim, output_dim))
 
         self.dropout = args.dropout
@@ -40,7 +41,7 @@ class GNNStack(torch.nn.Module):
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
-          
+
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)
             x = F.relu(x)
@@ -88,7 +89,7 @@ class GAT(MessagePassing):
         nn.init.xavier_uniform_(self.att_r)
 
     def forward(self, x, edge_index, size = None):
-        
+
         H, C = self.heads, self.out_channels
 
         n_nodes, d = x.shape
@@ -106,9 +107,9 @@ class GAT(MessagePassing):
         out = None
 
         if ptr is not None:
-          alpha = softmax(F.leaky_relu(alpha_i + alpha_j), ptr, num_nodes=size_i).unsqueeze(-1)
+            alpha = softmax(F.leaky_relu(alpha_i + alpha_j), ptr, num_nodes=size_i).unsqueeze(-1)
         else:
-          alpha = softmax(F.leaky_relu(alpha_i + alpha_j), index, num_nodes=size_i).unsqueeze(-1)
+            alpha = softmax(F.leaky_relu(alpha_i + alpha_j), index, num_nodes=size_i).unsqueeze(-1)
 
         alpha = F.dropout(alpha, p=self.dropout,training=self.training)
         out = alpha * x_j
@@ -118,5 +119,10 @@ class GAT(MessagePassing):
 
     def aggregate(self, inputs, index, dim_size = None):
         out = torch_scatter.scatter(inputs, index, dim=0, dim_size=dim_size, reduce='sum')
-    
+
         return out
+
+def get_model(args):
+    model = GNNStack(args.feat_dim, args.feat_dim, args.feat_dim, args, False)
+    return model
+    # input_dim, hidden_dim, output_dim, args, emb = False

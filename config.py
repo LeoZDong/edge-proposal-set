@@ -21,21 +21,24 @@ def get_parser():
     parser.add_argument('--feat_dim', 
                         type=int, 
                         default=128, 
-                        help="Feature dimension; both initial and output dimension.")
+                        help="Feature dimension; both initial, hidden, and output dimension.")
+    parser.add_argument('--num_layers',
+                        type=int,
+                        default=5,
+                        help="Number of GNN layers.")
+    parser.add_argument('--heads', type=int, default=2)
+    parser.add_argument('--dropout', type=float, default=0.9)
     
     # Training setup
     parser.add_argument('--n_iter',
                         type=int,
-                        default=3000000,
+                        default=100,
                         help='Number of training iterations (epochs).')
-    parser.add_argument('--batch_size',
-                        type=int,
-                        default=256,
-                        help="Batch size.")
+
     # optimization hyperparameters
     parser.add_argument('--lr',
                         type=float,
-                        default=3e-4,
+                        default=1e-3,
                         help="Learning rate.")
 
     # Data loading and model saving
@@ -45,11 +48,11 @@ def get_parser():
         help="Whether to purge existing logs and summaries in directory.")
     parser.add_argument('--train_ckpt_interval',
                         type=int,
-                        default=50000,
+                        default=10,
                         help="Save training checkpoints every n iters.")
     parser.add_argument('--log_interval',
                         type=int,
-                        default=1000,
+                        default=1,
                         help="Log stats every n iters.")
     
     parser.add_argument('--train_dir',

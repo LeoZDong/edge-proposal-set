@@ -1,12 +1,14 @@
 !!python/object:argparse.Namespace
-batch_size: 256
+dropout: 0.9
 eval_dir: /Users/Leo/Documents/Research/Graph Neural Networks/edge-proposal-set/eval/default
 feat_dim: 128
+heads: 2
 log_dir: logs
-log_interval: 1000
-lr: 0.0003
-n_iter: 3000000
+log_interval: 1
+lr: 0.001
+n_iter: 100
 name: default
+num_layers: 5
 purge: false
-train_ckpt_interval: 50000
+train_ckpt_interval: 10
 train_dir: /Users/Leo/Documents/Research/Graph Neural Networks/edge-proposal-set/train/default
