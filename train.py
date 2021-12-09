@@ -22,6 +22,8 @@ args = config.parse()
 
 # Define models
 model = models.get_model(args)
+if USE_CUDA:
+    model = model.cuda()
 
 # Define optimizer
 optim = torch.optim.Adam(model.parameters(), args.lr)
@@ -82,7 +84,7 @@ while it < args.n_iter:
                 node_feat = model(graph.x.cuda(), mp_edge_index.cuda())
             else:
                 node_feat = model(graph.x, mp_edge_index)
-                
+
             userEmbeds = node_feat[:num_user]
             itemEmbeds = node_feat[num_user:]
             precision, recall = metrics.metric_wrap(userEmbeds, itemEmbeds,
