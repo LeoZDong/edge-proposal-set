@@ -36,7 +36,7 @@ def get_parser():
                         help='Number of training iterations (epochs).')
     parser.add_argument('--num_neg_per_user', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--eval_interval', type=int, default=10)
+    parser.add_argument('--eval_interval', type=int, default=100)
     parser.add_argument('--k', type=int, default=1000)
 
     # optimization hyperparameters
