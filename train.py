@@ -66,7 +66,7 @@ while it < args.n_iter:
         train_t = round(time.time() - t, 3)
 
         # if it == 20:
-            # import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
 
         if it % args.log_interval == 0:
             print(f"It: {it}, loss={round(loss_it[-1], 3)}, time={train_t}")
@@ -82,5 +82,11 @@ while it < args.n_iter:
             print(f"Evaluation: precision={precision}, recall={recall}")
             model.train()
 
+        if it % args.ckpt_interval == 0:
+            file = f'models/model_{it}.pt'
+            torch.save(model.state_dict(), file)
+
     # pos_edges = util.sample_pos_edges(sup_edge_index, args.num_edges_per_iter)
     # neg_edges = util.sample_neg_edges(train_edge_index, args.num_edges_per_iter)
+
+torch.save(model.state_dict(), 'models/model_final.pt')

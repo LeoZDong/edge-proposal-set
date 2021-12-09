@@ -46,13 +46,9 @@ def get_parser():
                         help="Learning rate.")
 
     # Data loading and model saving
-    parser.add_argument(
-        '--purge',
-        action='store_true',
-        help="Whether to purge existing logs and summaries in directory.")
-    parser.add_argument('--train_ckpt_interval',
+    parser.add_argument('--ckpt_interval',
                         type=int,
-                        default=10,
+                        default=1000,
                         help="Save training checkpoints every n iters.")
     parser.add_argument('--log_interval',
                         type=int,
