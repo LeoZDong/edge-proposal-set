@@ -102,7 +102,8 @@ def get_dataset(data, split, num_neg_per_user):
 
     is_training = False
     if split == 'train':
-        edge_index = data.edge_index[:, data.sup_mask]
+        # edge_index = data.edge_index[:, data.sup_mask]
+        edge_index = train_edge_index
         is_training = True
     elif split == 'val':
         edge_index = data.edge_index[:, data.val_mask]
