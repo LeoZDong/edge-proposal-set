@@ -40,7 +40,8 @@ val_mp_mask = torch.logical_or(graph.mp_mask, graph.sup_mask)
 val_edge_index = graph.edge_index[:, val_mp_mask]
 
 test_mp_mask = torch.logical_or(val_mp_mask, graph.val_mask)
-# Not used for now...
+test_edge_index = graph.edge_index[:, test_mp_mask]
+
 
 # Define models
 model = models.get_model(args, num_user + num_item)
@@ -87,10 +88,12 @@ while it < args.n_iter:
 
         if it % args.eval_interval == 0:
             model.eval()
+            # NOTE: Since metric is calculated on the entire known graph, perhaps
+            # it is more fair to use test_edge_index (i.e. only test edges are heldout).
             if USE_CUDA:
-                node_feat = model(graph.x.cuda(), val_edge_index.cuda())
+                node_feat = model(graph.x.cuda(), test_edge_index.cuda())
             else:
-                node_feat = model(graph.x, val_edge_index)
+                node_feat = model(graph.x, test_edge_index)
 
             userEmbeds = node_feat[:num_user]
             itemEmbeds = node_feat[num_user:]
