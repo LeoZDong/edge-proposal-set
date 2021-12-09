@@ -48,9 +48,9 @@ def get_data(csv_file, feat_dim):
             if rating > THRESHOLD:
                 edge_index_lst.append(edge)
                 edge_index_lst.append(edge[::-1])
-        edge_index = torch.LongTensor(edge_index_lst)
+        edge_index = torch.LongTensor(edge_index_lst).T
     
-        mp_mask, sup_mask, val_mask, test_mask = get_masks(edge_index.shape[0])
+        mp_mask, sup_mask, val_mask, test_mask = get_masks(edge_index.shape[1])
         x = torch.ones(len(userIds) + len(movieIds), feat_dim)
         data = Data(x=x, edge_index=edge_index)
         
