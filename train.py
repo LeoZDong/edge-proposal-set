@@ -114,13 +114,13 @@ while it < args.n_iter:
                 if hits_k > best_hits_k:
                     best_hits_k = hits_k
                     print("Saving best model...")
-                    torch.save(model.state_dict(), 'models/model_best.pt')
+                    torch.save(model.state_dict(), 'models/pretrain_best.pt')
 
                 model.train()
 
         if it % args.ckpt_interval == 0:
-            file = f'models/model_{it}.pt'
+            file = f'models/pretrain_{it}.pt'
             torch.save(model.state_dict(), file)
 
 
-torch.save(model.state_dict(), 'models/model_final.pt')
+torch.save(model.state_dict(), 'models/pretrain_final.pt')
