@@ -7,7 +7,6 @@ import io
 
 from util import str2bool
 
-
 def get_parser():
     parser = argparse.ArgumentParser(
         description="Arguments for RL training and evaluation")
@@ -17,6 +16,12 @@ def get_parser():
                         type=str,
                         default='default',
                         help="Name of this session / model to be tagged.")
+    
+    # Model setup
+    parser.add_argument('--feat_dim', 
+                        type=int, 
+                        default=128, 
+                        help="Feature dimension; both initial and output dimension.")
     
     # Training setup
     parser.add_argument('--n_iter',
@@ -63,16 +68,9 @@ def get_parser():
     return parser
 
 
-def parse(root=os.path.dirname(os.path.abspath(__file__)),
-          config_file=None,
-          save_config=False):
+def parse(root=os.path.dirname(os.path.abspath(__file__)), save_config=True):
     parser = get_parser()
-    if config_file is not None:
-        with open(config_file, 'r') as stream:
-            config = yaml.safe_load(stream)
-            args = parser.parse_args(config)
-    else:
-        args = parser.parse_args()
+    args = parser.parse_args()
 
     # Configure directories
     args.train_dir = os.path.join(root, args.train_dir, args.name)
@@ -87,7 +85,7 @@ def parse(root=os.path.dirname(os.path.abspath(__file__)),
         os.makedirs(args.log_dir)
 
     if save_config:
-        save_file = 'config_{}.yaml'.format(args.model_name)
+        save_file = 'config_{}.yaml'.format(args.name)
         with io.open(save_file, 'w') as outfile:
             yaml.dump(args, outfile)
 
