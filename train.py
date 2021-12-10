@@ -23,7 +23,7 @@ def main(mode="pretrain", load=True):
 
     # Create data objects
     
-    graph = data.get_data_cached(csv_file='ratings.csv', feat_dim=128)
+    graph = data.get_data_cached(csv_file='/content/edge-proposal-set/ratings.csv', feat_dim=128)
     
     graph = graph.to(device)
 
@@ -150,7 +150,7 @@ def main(mode="pretrain", load=True):
                     if hits_k > best_hits_k:
                         best_hits_k = hits_k
                         print("Saving best model...")
-                        # util.save(mode, "models/", "best", model, optim, best_hits_k)
+                        util.save(mode, "models/", "best", model, optim, best_hits_k)
 
                     model.train()
 
