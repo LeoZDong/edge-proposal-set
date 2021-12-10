@@ -194,7 +194,8 @@ def get_data(csv_file, feat_dim, subsample=-1):
 
 
 def get_data_cached(csv_file='ratings.csv', feat_dim=128, write_new_file=False):
-    file_name = f"data_and_masks_{csv_file}_{feat_dim}.pt"
+    csv_file_use = csv_file.split("/")[-1]
+    file_name = f"data_and_masks_{csv_file_use}_{feat_dim}.pt"
     if not write_new_file and os.path.exists(file_name):
         print(f"File exists, loading {file_name}")
         data = torch.load(file_name)

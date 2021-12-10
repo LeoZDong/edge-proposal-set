@@ -12,6 +12,12 @@ import util
 import metrics
 import pdb
 
+try:
+  import google.colab
+  IN_COLAB = True
+except:
+  IN_COLAB = False
+
 torch.manual_seed(0)
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -23,7 +29,9 @@ def main(mode="pretrain", load=True):
 
     # Create data objects
     
-    graph = data.get_data_cached(csv_file='/content/edge-proposal-set/ratings.csv', feat_dim=128)
+    
+    csv_load = '/content/edge-proposal-set/ratings.csv' if IN_COLAB else 'ratings.csv'
+    graph = data.get_data_cached(csv_file=csv_load, feat_dim=128)
     
     graph = graph.to(device)
 
@@ -87,12 +95,16 @@ def main(mode="pretrain", load=True):
     
     mp_edge_index = torch.cat([mp_edge_index, mp_edge_index.flip(0)], dim=1) #2 x 2E
     val_mp_edge_index = torch.cat([val_mp_edge_index, val_mp_edge_index.flip(0)], dim=1)
-    test_edge_index = torch.cat([test_edge_index, test_edge_index.flip(0)], dim=1)
-    
+    test_mp_edge_index = torch.cat([test_mp_edge_index, test_mp_edge_index.flip(0)], dim=1)
+
+
     # Start training
     loss_it = []
     it = 0
     model.train()
+
+    its = []
+    hitsatk = []
     
     while it < args.n_iter:
         for batch in train_loader:
@@ -138,18 +150,22 @@ def main(mode="pretrain", load=True):
                                             recall_exclude_edges, val_num_pos)
                     print(f"Evaluation: hits_k={round(hits_k * 100, 2)}")
 
-                    node_feat = model(graph.x, test_mp_edge_index)
+                    hitsatk.append(hits_k)
+                    its.append(it)
 
-                    hits_k_test = metrics.hits_k(userEmbeds, itemEmbeds, args.k,
-                                            test_adj_mat, num_user,
-                                            test_recall_exclude_edges, test_num_pos)
-                    print(f"Test: hits_k={round(hits_k_test * 100, 2)}")
+                    # node_feat = model(graph.x, test_mp_edge_index)
+
+                    # hits_k_test = metrics.hits_k(userEmbeds, itemEmbeds, args.k,
+                    #                         test_adj_mat, num_user,
+                    #                         test_recall_exclude_edges, test_num_pos)
+                    # print(f"Test: hits_k={round(hits_k_test * 100, 2)}")
 
                     
 
                     if hits_k > best_hits_k:
                         best_hits_k = hits_k
                         print("Saving best model...")
+                        torch.save(dict(hitsatk=hitsatk, its=its) ,"hitsk_list.pt")
                         util.save(mode, "models/", "best", model, optim, best_hits_k)
 
                     model.train()
@@ -161,4 +177,4 @@ def main(mode="pretrain", load=True):
 
 
 if __name__ == "__main__":
-    main("train", True)
+    main("pretrain", False)

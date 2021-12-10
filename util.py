@@ -63,7 +63,7 @@ def top_P_edges(userEmbeds, movieEmbeds, k, exclude_edges):
     _, topK_indices = dot_prod.flatten().topk(k=k)
     numCols = movieEmbeds.shape[0]
     rows = torch.div(topK_indices, numCols, rounding_mode='floor')
-    cols = (topK_indices % numCols) + userEmbeds.shape[0] #need to reaccount for edge delta
+    cols = (topK_indices % numCols) #+ userEmbeds.shape[0] #need to reaccount for edge delta
 
     return torch.stack([rows, cols]).T
 
