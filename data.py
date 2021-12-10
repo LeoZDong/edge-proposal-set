@@ -20,7 +20,7 @@ def build_adj_mat(edge_index, user_num, item_num, sparse=True):
     else:
         adj_mat = np.zeros((user_num, item_num), bool)
     # load ratings as a dok matrix
-    for x in edge_index.T:
+    for x in edge_index.cpu().T:
         adj_mat[x[0], x[1]-user_num] = True
 
     return adj_mat
@@ -53,7 +53,7 @@ class BPRData(data.Dataset):
         """
         # Process edge index so user and item node indices both start at 1
         edge_index[1, :] -= num_user
-        self.edge_index = edge_index.T
+        self.edge_index = edge_index.cpu().T
         self.num_user = num_user
         self.num_item = num_item
         self.train_mat = train_mat

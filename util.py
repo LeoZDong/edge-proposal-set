@@ -14,13 +14,14 @@ def load(name, log_dir, iteration, model, optimizer):
         ValueError: if checkpoint for checkpoint_step is not found
     """
     target_path = (
-        f'{os.path.join(log_dir, f"{name}_state")}'
+        f'{os.path.join(log_dir, f"{name}_")}'
         f'{iteration}.pt'
     )
     if os.path.isfile(target_path):
         state = torch.load(target_path)
         model.load_state_dict(state['network_state'])
-        optimizer.load_state_dict(state['optimizer_state'])
+        if optimizer:
+            optimizer.load_state_dict(state['optimizer_state'])
         print(f'Loaded checkpoint iteration {iteration}.')
         return state
     else:
@@ -28,16 +29,17 @@ def load(name, log_dir, iteration, model, optimizer):
             f'No checkpoint for iteration {iteration} found.'
         )
 
-def save(name, log_dir, iteration, model, optimizer):
+def save(name, log_dir, iteration, model, optimizer, best_hits_k=0):
     """Saves network and optimizer state_dicts as a checkpoint.
     Args:
         iteration (int): iteration to label checkpoint with
     """
     save_dict = dict(network_state=model.state_dict(),
-             optimizer_state=optimizer.state_dict())
+             optimizer_state=optimizer.state_dict(),
+             best_hits_k=best_hits_k)
     torch.save(
         save_dict,
-        f'{os.path.join(log_dir, f"{name}_state")}{iteration}.pt'
+        f'{os.path.join(log_dir, f"{name}_")}{iteration}.pt'
     )
     print(f'Saved checkpoint, step: {iteration}.')
 

@@ -10,10 +10,12 @@ import data
 import models
 import util
 import metrics
+import pdb
 
 torch.manual_seed(0)
 USE_CUDA = torch.cuda.is_available()
-P = 10000
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+P = 100000
 
 def top_P_edges(userEmbeds, movieEmbeds, k, exclude_edges):
     dot_prod = userEmbeds @ movieEmbeds.T
@@ -22,8 +24,7 @@ def top_P_edges(userEmbeds, movieEmbeds, k, exclude_edges):
     _, topK_indices = dot_prod.flatten().topk(k=k)
     numCols = movieEmbeds.shape[0]
     rows = torch.div(topK_indices, numCols, rounding_mode='floor')
-    cols = topK_indices % numCols
-
+    cols = (topK_indices % numCols) + userEmbeds.shape[0] #need to reaccount for edge delta
 
     return torch.stack([rows, cols]).T
 
@@ -34,7 +35,9 @@ def main(mode="pretrain", load=True):
     # Create data objects
     
     graph = data.get_data_cached(csv_file='ratings.csv', feat_dim=128)
- 
+    
+    graph = graph.to(device)
+
     train_mask = torch.logical_or(graph.mp_mask, graph.sup_mask)
     train_edge_index = graph.edge_index[:, train_mask]
     val_edge_index = graph.edge_index[:, graph.val_mask]
@@ -68,40 +71,41 @@ def main(mode="pretrain", load=True):
     model = models.get_model(args, num_user + num_item)
     if USE_CUDA:
         model = model.cuda()
-
+        
     # Define optimizer
     optim = torch.optim.Adam(model.parameters(), args.lr)
     
+    best_hits_k = 0
     if load:
         name = "pretrain" if mode == "train" else "none"
-        util.load(name, "models/", iteration, model, optim)
+        state = util.load(name, "models/", "best", model, None)
+        best_hits_k = state['best_hits_k']
         
     if mode == "train": #add new edges
         node_feat = model(graph.x.cuda(), val_mp_edge_index.cuda())
         userEmbeds = node_feat[:num_user]
-        itemEmbeds = node_feat[num_user:]
+        movieEmbeds = node_feat[num_user:]
         exclude_MP = mp_edge_index.clone().T
         exclude_MP[:, 1] -= num_user
         
         p_edges = top_P_edges(userEmbeds, movieEmbeds, P, exclude_MP)
-        mp_edge_index = mp_edge_index.stack([mp_edge_index, p_edges])
-        pdb.set_Trace()
+        mp_edge_index = torch.cat([mp_edge_index.T, p_edges], dim=0).T #2 x E
     
-
-
+    mp_edge_index = torch.cat([mp_edge_index, mp_edge_index.flip(0)], dim=1) #2 x 2E
+    val_mp_edge_index = torch.cat([val_mp_edge_index, val_mp_edge_index.flip(0)], dim=1)
+    
     # Start training
     loss_it = []
     it = 0
     model.train()
-    best_hits_k = 0
+    
     while it < args.n_iter:
         for batch in train_loader:
             t = time.time()
-            if USE_CUDA:
-                # X is the node embeds for all the users, MP_edge is the message passing edges used
-                node_feat = model(graph.x.cuda(), mp_edge_index.cuda())
-            else:
-                node_feat = model(graph.x, mp_edge_index)
+
+            # X is the node embeds for all the users, MP_edge is the message passing edges used
+            node_feat = model(graph.x, mp_edge_index)
+
 
             # Loss calculation
             optim.zero_grad()
@@ -130,10 +134,7 @@ def main(mode="pretrain", load=True):
                     model.eval()
                     # NOTE: Since metric is calculated on the entire known graph, perhaps
                     # it is more fair to use test_edge_index (i.e. only test edges are heldout).
-                    if USE_CUDA:
-                        node_feat = model(graph.x.cuda(), val_mp_edge_index.cuda())
-                    else:
-                        node_feat = model(graph.x, val_mp_edge_index)
+                    node_feat = model(graph.x, val_mp_edge_index)
 
                     userEmbeds = node_feat[:num_user]
                     itemEmbeds = node_feat[num_user:]
@@ -145,7 +146,7 @@ def main(mode="pretrain", load=True):
                     if hits_k > best_hits_k:
                         best_hits_k = hits_k
                         print("Saving best model...")
-                        torch.save(model.state_dict(), f'models/{mode}_best.pt')
+                        util.save(mode, "models/", "best", model, optim, best_hits_k)
 
                     model.train()
 
@@ -156,4 +157,4 @@ def main(mode="pretrain", load=True):
 
 
 if __name__ == "__main__":
-    main("train", False)
+    main("train", True)
