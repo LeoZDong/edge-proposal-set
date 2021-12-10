@@ -86,28 +86,20 @@ class GraphSage(MessagePassing):
         self.lin_r.reset_parameters()
 
     def forward(self, x, edge_index, size=None):
-        out = None
         # x shape: (n_nodes, feature_dim)
         out = self.propagate(edge_index, x=(x, x))
         out = self.lin_r(out)
         out += self.lin_l(x)
         if self.normalize:
             out = nn.functional.normalize(out)
-
         # out shape: (n_nodes, out_feature_dim)
         return out
 
     def message(self, x_j):
-        out = None
         out = x_j
-
         return out
 
     def aggregate(self, inputs, index, dim_size=None):
-        out = None
-
-        # The axis along which to index number of nodes.
-        node_dim = self.node_dim
         # inputs shape: (sum_i(#neigh of node i), D)
         # index shape: (sum_i(#neigh of node i)); indicates the corresponding source node index
         out = torch_scatter.scatter(inputs, index, dim=0, reduce='sum')
