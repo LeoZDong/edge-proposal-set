@@ -17,17 +17,6 @@ USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 P = 100000
 
-def top_P_edges(userEmbeds, movieEmbeds, k, exclude_edges):
-    dot_prod = userEmbeds @ movieEmbeds.T
-    # for edge in exclude_edges:
-    dot_prod[exclude_edges[:, 0], exclude_edges[:, 1]] = -float('inf')
-    _, topK_indices = dot_prod.flatten().topk(k=k)
-    numCols = movieEmbeds.shape[0]
-    rows = torch.div(topK_indices, numCols, rounding_mode='floor')
-    cols = (topK_indices % numCols) + userEmbeds.shape[0] #need to reaccount for edge delta
-
-    return torch.stack([rows, cols]).T
-
 def main(mode="pretrain", load=True):
     # Load hyperparameters
     args = config.parse()
@@ -63,9 +52,14 @@ def main(mode="pretrain", load=True):
     val_edge_index = graph.edge_index[:, torch.logical_or(val_mp_mask, graph.val_mask)]
     val_adj_mat = data.build_adj_mat(val_edge_index, num_user, num_item)
 
-    # test_mp_mask = torch.logical_or(val_mp_mask, graph.val_mask)
-    # test_edge_index = graph.edge_index[:, test_mp_mask]
-
+    test_mp_mask = torch.logical_or(val_mp_mask, graph.val_mask)
+    test_mp_edge_index = graph.edge_index[:, test_mp_mask]
+    test_recall_exclude_edges = test_mp_edge_index.clone().T
+    test_recall_exclude_edges[:, 1] -= num_user
+    test_num_pos = util.count_pos(graph.edge_index[:, graph.test_mask], num_user)
+    
+    test_edge_index = graph.edge_index
+    test_adj_mat = data.build_adj_mat(test_edge_index, num_user, num_item)
 
     # Define models
     model = models.get_model(args, num_user + num_item)
@@ -88,11 +82,12 @@ def main(mode="pretrain", load=True):
         exclude_MP = mp_edge_index.clone().T
         exclude_MP[:, 1] -= num_user
         
-        p_edges = top_P_edges(userEmbeds, movieEmbeds, P, exclude_MP)
+        p_edges = util.top_P_edges(userEmbeds, movieEmbeds, P, exclude_MP)
         mp_edge_index = torch.cat([mp_edge_index.T, p_edges], dim=0).T #2 x E
     
     mp_edge_index = torch.cat([mp_edge_index, mp_edge_index.flip(0)], dim=1) #2 x 2E
     val_mp_edge_index = torch.cat([val_mp_edge_index, val_mp_edge_index.flip(0)], dim=1)
+    test_edge_index = torch.cat([test_edge_index, test_edge_index.flip(0)], dim=1)
     
     # Start training
     loss_it = []
@@ -143,10 +138,19 @@ def main(mode="pretrain", load=True):
                                             recall_exclude_edges, val_num_pos)
                     print(f"Evaluation: hits_k={round(hits_k * 100, 2)}")
 
+                    node_feat = model(graph.x, test_mp_edge_index)
+
+                    hits_k_test = metrics.hits_k(userEmbeds, itemEmbeds, args.k,
+                                            test_adj_mat, num_user,
+                                            test_recall_exclude_edges, test_num_pos)
+                    print(f"Test: hits_k={round(hits_k_test * 100, 2)}")
+
+                    
+
                     if hits_k > best_hits_k:
                         best_hits_k = hits_k
                         print("Saving best model...")
-                        util.save(mode, "models/", "best", model, optim, best_hits_k)
+                        # util.save(mode, "models/", "best", model, optim, best_hits_k)
 
                     model.train()
 

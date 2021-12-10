@@ -17,12 +17,15 @@ def load(name, log_dir, iteration, model, optimizer):
         f'{os.path.join(log_dir, f"{name}_")}'
         f'{iteration}.pt'
     )
+    print(target_path)
     if os.path.isfile(target_path):
         state = torch.load(target_path)
-        model.load_state_dict(state['network_state'])
+        model.load_state_dict(state) #['network_state']
         if optimizer:
             optimizer.load_state_dict(state['optimizer_state'])
         print(f'Loaded checkpoint iteration {iteration}.')
+        if "best_hits_k" not in state:
+            state['best_hits_k'] = 38
         return state
     else:
         raise ValueError(
@@ -52,6 +55,18 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+def top_P_edges(userEmbeds, movieEmbeds, k, exclude_edges):
+    dot_prod = userEmbeds @ movieEmbeds.T
+    # for edge in exclude_edges:
+    dot_prod[exclude_edges[:, 0], exclude_edges[:, 1]] = -float('inf')
+    _, topK_indices = dot_prod.flatten().topk(k=k)
+    numCols = movieEmbeds.shape[0]
+    rows = torch.div(topK_indices, numCols, rounding_mode='floor')
+    cols = (topK_indices % numCols) + userEmbeds.shape[0] #need to reaccount for edge delta
+
+    return torch.stack([rows, cols]).T
+
 
 def count_pos(edge_index, num_user):
     count = np.zeros(num_user)
